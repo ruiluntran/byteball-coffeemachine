@@ -1,30 +1,39 @@
 /*jslint node: true */
 "use strict";
-var conf = require('byteballcore/conf.js');
-var device = require('byteballcore/device.js');
-var walletDefinedByKeys = require('byteballcore/wallet_defined_by_keys.js');
-var crypto = require('crypto');
-var fs = require('fs');
-var db = require('byteballcore/db.js');
-var eventBus = require('byteballcore/event_bus.js');
-var desktopApp = require('byteballcore/desktop_app.js');
+const conf = require('byteballcore/conf.js');
+const device = require('byteballcore/device.js');
+const walletDefinedByKeys = require('byteballcore/wallet_defined_by_keys.js');
+const crypto = require('crypto');
+const fs = require('fs');
+const db = require('byteballcore/db.js');
+const eventBus = require('byteballcore/event_bus.js');
+const desktopApp = require('byteballcore/desktop_app.js');
+const gpio = require('rpi-gpio');
 require('byteballcore/wallet.js'); // we don't need any of its functions but it listens for hub/* messages
 
-var appDataDir = desktopApp.getAppDataDir();
-var KEYS_FILENAME = appDataDir + '/' + conf.KEYS_FILENAME;
+const appDataDir = desktopApp.getAppDataDir();
+const KEYS_FILENAME = appDataDir + '/' + conf.KEYS_FILENAME;
 
-var wallet;
+let wallet;
 
-var arrToppings = {
+const arrToppings = {
 	hawaiian: {name: 'Hawaiian'},
 	pepperoni: {name: 'Pepperoni'},
 	mexican: {name: 'Mexican'}
 };
 
-var arrYesNoAnswers = {
+const arrYesNoAnswers = {
 	yes: 'Yes',
 	no: 'No'
 }
+
+initGPIO();
+
+function initGPIO(){
+  gpio.setup(15, gpio.DIR_OUT);
+}
+
+
 
 function getToppingsList(){
 	var arrItems = [];
@@ -183,7 +192,7 @@ eventBus.on('paired', function(from_address){
 	if (!wallet)
 		return handleNoWallet(from_address);
 	createNewSession(from_address, function(){
-		device.sendMessageToDevice(from_address, 'text', "Hi! Choose your pizza:\n"+getToppingsList()+"\nAll pizzas are at 10,000 bytes.");
+		device.sendMessageToDevice(from_address, 'text', "Hi! Choose your pizza:\n"+getToppingsList()+"\nAll pizzas are at 1 byte.");
 	});
 });
 
@@ -209,7 +218,7 @@ eventBus.on('text', function(from_address, text){
 					state.address = objAddress.address;
 					state.order.cola = text;
 					state.step = 'waiting_for_payment';
-					state.amount = 10000;
+					state.amount = 1;
 					var response = 'Your order: '+arrToppings[state.order.pizza].name;
 					if (state.order.cola === 'yes'){
 						state.amount += 1000;
@@ -283,10 +292,18 @@ eventBus.on('my_transactions_became_stable', function(arrUnits){
 						? "Payment confirmed.  Your order is on its way to you!" 
 						: "Your payment appeared to be double-spend.  The order will not be fulfilled"
 				);
+
+        gpio.write(15, true, (err) => {
+          if (err) throw err;
+          console.log('Written to pin');
+        });
+
 				// todo: actually deliver the pizza
 			});
 		}
 	);
 });
+
+
 
 
