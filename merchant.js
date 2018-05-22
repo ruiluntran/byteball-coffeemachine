@@ -228,6 +228,7 @@ eventBus.on('text', function (from_address, text) {
           }
           response += ".\nOrder total is " + state.amount + " bytes.  Please pay.\n[" + state.amount + " bytes](byteball:" + state.address + "?amount=" + state.amount + ")";
           updateState(state);
+          startCoffee();
           device.sendMessageToDevice(from_address, 'text', response);
         });
         break;
