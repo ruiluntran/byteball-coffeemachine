@@ -1,0 +1,28 @@
+{
+  "name": "byteball-merchant",
+  "description": "Byteball Merchant",
+  "author": "Byteball",
+  "version": "0.1.0",
+  "main": "merchant.js",
+  "keywords": [
+    "merchant",
+    "byteball",
+    "chatbot"
+  ],
+  "license": "MIT",
+  "repository": {
+    "url": "git://github.com/byteball/byteball-merchant.git",
+    "type": "git"
+  },
+  "bugs": {
+    "url": "https://github.com/byteball/byteball-merchant/issues"
+  },
+  "browser": {
+    "request": "browser-request",
+    "secp256k1": "secp256k1/js"
+  },
+  "dependencies": {
+    "bitcore-lib": "^0.13.14",
+    "byteballcore": "git+https://github.com/byteball/byteballcore.git"
+  }
+}
