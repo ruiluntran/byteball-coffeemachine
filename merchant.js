@@ -209,12 +209,12 @@ eventBus.on('text', function (from_address, text) {
         state.order.pizza = text;
         state.step = 'waiting_for_choice_of_cola';
         updateState(state);
-        device.sendMessageToDevice(from_address, 'text', arrToppings[text].name + " at 10,000 bytes.  Add a cola (1,000 bytes)?\n" + getYesNoList());
+        device.sendMessageToDevice(from_address, 'text', arrToppings[text].name + " at 1 bytes.  Add a cola (1 bytes)?\n" + getYesNoList());
         break;
 
       case 'waiting_for_choice_of_cola':
         if (!arrYesNoAnswers[text])
-          return device.sendMessageToDevice(from_address, 'text', "Add a cola (1,000 bytes)?  Please click Yes or No above.");
+          return device.sendMessageToDevice(from_address, 'text', "Add a cola (1 bytes)?  Please click Yes or No above.");
         walletDefinedByKeys.issueNextAddress(wallet, 0, function (objAddress) {
           state.address = objAddress.address;
           state.order.cola = text;
@@ -222,7 +222,7 @@ eventBus.on('text', function (from_address, text) {
           state.amount = 1;
           var response = 'Your order: ' + arrToppings[state.order.pizza].name;
           if (state.order.cola === 'yes') {
-            state.amount += 1000;
+            state.amount += 1;
             response += ' and Cola';
           }
           response += ".\nOrder total is " + state.amount + " bytes.  Please pay.\n[" + state.amount + " bytes](byteball:" + state.address + "?amount=" + state.amount + ")";
