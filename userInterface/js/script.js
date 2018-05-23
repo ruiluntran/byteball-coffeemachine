@@ -15,8 +15,8 @@ socket.on('generatedNewAddress', function(msg){
   generateNewQRcode(msg.data);
 });
 
-socket.on('coffeePaid', function(msg){
-  alert('Coffee paid by ' + msg.data);
+socket.on('coffeePaid', function(){
+  alert('Coffee paid');
 });
 
 button.on('click', function () {

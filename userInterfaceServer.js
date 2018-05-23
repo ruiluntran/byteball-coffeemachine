@@ -23,8 +23,8 @@ module.exports = {
   generatedNewAddress: (address)=>{
     io.emit('generatedNewAddress', {data: address});
   },
-  coffeePaid: (address) => {
-    io.emit('coffeePaid', {data : address})
+  coffeePaid: () => {
+    io.emit('coffeePaid');
   }
 
 

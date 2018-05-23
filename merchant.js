@@ -11,6 +11,9 @@ const db = require('byteballcore/db.js');
 const eventBus = require('byteballcore/event_bus.js');
 const desktopApp = require('byteballcore/desktop_app.js');
 const gpio = RpiBuild ? require('rpi-gpio') : false;
+
+const socket = require('./userInterfaceServer');
+
 const BoschCoinAssetID = 'ok0KVjTO9h5eU6klYLb0nwYFqJhcHlXBYoSgq1RF8E0=';
 
 require('byteballcore/wallet.js'); // we don't need any of its functions but it listens for hub/* messages
@@ -21,8 +24,8 @@ const KEYS_FILENAME = appDataDir + '/' + conf.KEYS_FILENAME;
 let wallet;
 
 const arrCoffees = {
-  normal: {name: 'Normal', price: conf.NormalCoffeePrice },
-  strong: {name: 'Strong', price: conf.StrongCoffeePrice },
+  normal: {name: 'Normal', price: conf.NormalCoffeePrice},
+  strong: {name: 'Strong', price: conf.StrongCoffeePrice},
 };
 
 const arrYesNoAnswers = {
@@ -36,7 +39,7 @@ function initGPIO() {
   console.log('###################################################################################################');
   console.log('Init GPIO');
   console.log('###################################################################################################');
-if (RpiBuild) {
+  if (RpiBuild) {
     gpio.setup(15, gpio.DIR_OUT);
   }
 }
@@ -45,7 +48,7 @@ if (RpiBuild) {
 function getCoffeeList() {
   var arrItems = [];
   for (var code in arrCoffees)
-    arrItems.push('[' + arrCoffees[code].name + ' '+arrCoffees[code].price + '](command:' + code + ')' + ' BC \n');
+    arrItems.push('[' + arrCoffees[code].name + ' ' + arrCoffees[code].price + '](command:' + code + ')' + ' BC \n');
   return arrItems.join("");
 }
 
@@ -212,21 +215,22 @@ eventBus.on('text', function (from_address, text) {
   text = text.trim().toLowerCase();
   readCurrentState(from_address, function (state) {
 
-console.log("current state.step: " + state.step);
+    console.log("current state.step: " + state.step);
     switch (state.step) {
       case 'waiting_for_choice_of_coffee':
         if (!arrCoffees[text])
           return device.sendMessageToDevice(from_address, 'text', "Please choose your coffee:\n" + getCoffeeList());
         walletDefinedByKeys.issueNextAddress(wallet, 0, function (objAddress) {
-	        state.address = objAddress.address;
+          socket.generatedNewAddress(objAddress);
+          state.address = objAddress.address;
           state.order.coffee = text;
-	        state.step = 'waiting_for_payment';
-	        state.amount = 1;
-          var response = "You've ordered " + state.amount + " " + arrCoffees[state.order.coffee].name + " Coffee. Please pay.\n[" + state.amount + " bytes](byteball:" + state.address + "?amount=" + arrCoffees[state.order.coffee].price*100000 + "&asset=" + encodeURIComponent(BoschCoinAssetID) +")";
+          state.step = 'waiting_for_payment';
+          state.amount = 1;
+          var response = "You've ordered " + state.amount + " " + arrCoffees[state.order.coffee].name + " Coffee. Please pay.\n[" + state.amount + " bytes](byteball:" + state.address + "?amount=" + arrCoffees[state.order.coffee].price * 100000 + "&asset=" + encodeURIComponent(BoschCoinAssetID) + ")";
           updateState(state);
           device.sendMessageToDevice(from_address, 'text', response);
-	      });
-      break;
+        });
+        break;
       case 'waiting_for_payment':
         if (text !== 'cancel')
           return device.sendMessageToDevice(from_address, 'text', "Waiting for your payment.  If you want to cancel the order and start over, click [Cancel](command:cancel).");
@@ -238,7 +242,7 @@ console.log("current state.step: " + state.step);
 
       case 'unconfirmed_payment':
         device.sendMessageToDevice(from_address, 'text', "We're pouring your coffee now while we are waiting for confirmation of your payment.");
-          break;
+        break;
 
       case 'done':
       case 'doublespend':
@@ -265,17 +269,18 @@ eventBus.on('new_my_transactions', function (arrUnits) {
     [arrUnits, BoschCoinAssetID],
     function (rows) {
       rows.forEach(function (row) {
-	if (row.asset !== BoschCoinAssetID)
-	  return device.sendMessageToDevice(row.device_address, 'text', "Received payment in wrong asset");
+        if (row.asset !== BoschCoinAssetID)
+          return device.sendMessageToDevice(row.device_address, 'text', "Received payment in wrong asset");
         if (row.expected_amount !== row.paid_amount) {
           return device.sendMessageToDevice(row.device_address, 'text', "Received incorect amount from you: expected " + row.expected_amount + " bytes, received " + row.paid_amount + " bytes.  The payment is ignored.");
         }
 
         db.query("UPDATE states SET pay_date=" + db.getNow() + ", unit=?, step='unconfirmed_payment' WHERE state_id=?", [row.unit, row.state_id]);
         device.sendMessageToDevice(row.device_address, 'text', "We're pouring your coffee now while we are waiting for confirmation of your payment.");
-        if(RpiBuild) {
-            startCoffee();
-	      }  
+        if (RpiBuild) {
+          startCoffee();
+          socket.coffeePaid();
+        }
       });
     }
   );
