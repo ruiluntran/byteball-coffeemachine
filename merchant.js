@@ -31,7 +31,7 @@ const arrCoffees = {
 const arrYesNoAnswers = {
   yes: 'Yes',
   no: 'No'
-}
+};
 
 initGPIO();
 
@@ -221,7 +221,7 @@ eventBus.on('text', function (from_address, text) {
         if (!arrCoffees[text])
           return device.sendMessageToDevice(from_address, 'text', "Please choose your coffee:\n" + getCoffeeList());
         walletDefinedByKeys.issueNextAddress(wallet, 0, function (objAddress) {
-          socket.generatedNewAddress(objAddress);
+          socket.generatedNewAddress(objAddress.address);
           state.address = objAddress.address;
           state.order.coffee = text;
           state.step = 'waiting_for_payment';
