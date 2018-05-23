@@ -11,7 +11,7 @@ let coffeeController = function() {
     // currentSelection: 1 == normal, 0 == strong; default after boot is 1
     this._currentSelection = 1;
 
-    this.init = enableGpio => {
+    this.init = function (enableGpio) {
         console.log('###################################################################################################');
         console.log('Activating Coffee Controller')
 

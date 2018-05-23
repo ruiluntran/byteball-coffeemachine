@@ -10,8 +10,10 @@ const db = require('byteballcore/db.js');
 const eventBus = require('byteballcore/event_bus.js');
 const desktopApp = require('byteballcore/desktop_app.js');
 
-const coffeeController = require('./coffee')
-coffeeController.init()
+const coffeeController = require('./coffee');
+
+let coffee = new coffeeController();
+coffee.init()
 
 const socket = require('./userInterfaceServer');
 
@@ -27,26 +29,12 @@ const arrCoffees = {
   strong: {name: 'Strong', price: conf.StrongCoffeePrice},
 };
 
-const arrYesNoAnswers = {
-  yes: 'Yes',
-  no: 'No'
-}
-
-
-
 
 function getCoffeeList() {
   var arrItems = [];
   for (var code in arrCoffees)
     arrItems.push('[' + arrCoffees[code].name + ' ' + arrCoffees[code].price + '](command:' + code + ')' + ' BC \n');
   return arrItems.join("");
-}
-
-function getYesNoList() {
-  var arrItems = [];
-  for (var code in arrYesNoAnswers)
-    arrItems.push('[' + arrYesNoAnswers[code] + '](command:' + code + ')');
-  return arrItems.join("\t");
 }
 
 function replaceConsoleLog() {
@@ -215,7 +203,7 @@ eventBus.on('text', function (from_address, text) {
           state.address = objAddress.address;
           state.order.coffee = text;
           state.step = 'waiting_for_payment';
-          state.amount = 1;
+          state.amount = arrCoffees[state.order.coffee].price;
           var response = "You've ordered " + state.amount + " " + arrCoffees[state.order.coffee].name + " Coffee. Please pay.\n[" + state.amount + " bytes](byteball:" + state.address + "?amount=" + arrCoffees[state.order.coffee].price * 100000 + "&asset=" + encodeURIComponent(conf.boschCoinAssetId) + ")";
           updateState(state);
           device.sendMessageToDevice(from_address, 'text', response);
@@ -253,28 +241,34 @@ eventBus.on('text', function (from_address, text) {
 
 
 eventBus.on('new_my_transactions', function (arrUnits) {
-  db.query(
-    `SELECT state_id, outputs.unit, device_address, states.amount AS expected_amount, outputs.amount AS paid_amount, outputs.asset \n\
-    FROM outputs JOIN states USING(address) WHERE outputs.unit IN(?) AND pay_date IS NULL`,
-    [arrUnits, conf.boschCoinAssetId],
-    function (rows) {
-      rows.forEach(function (row) {
-        if (row.asset !== conf.boschCoinAssetId)
-          return device.sendMessageToDevice(row.device_address, 'text', "Received payment in wrong asset");
-        if (row.expected_amount !== row.paid_amount) {
-          return device.sendMessageToDevice(row.device_address, 'text', "Received incorect amount from you: expected " + row.expected_amount + " bytes, received " + row.paid_amount + " bytes.  The payment is ignored.");
-        }
+  try {
+    db.query(
+      "SELECT state_id, outputs.unit, device_address, states.amount AS expected_amount, `order`, outputs.amount AS paid_amount, outputs.asset \n\
+      FROM outputs JOIN states USING(address) WHERE outputs.unit IN(?) AND pay_date IS NULL",
+      [arrUnits],
+      function (rows) {
+        rows.forEach(function (row) {
+          const paid = row.paid_amount / 100000;
+          const order = JSON.parse(row.order).coffee;
 
-        db.query("UPDATE states SET pay_date=" + db.getNow() + ", unit=?, step='unconfirmed_payment' WHERE state_id=?", [row.unit, row.state_id]);
-        device.sendMessageToDevice(row.device_address, 'text', "We're pouring your coffee now while we are waiting for confirmation of your payment.");
+          if (row.asset !== conf.boschCoinAssetId)
+            return device.sendMessageToDevice(row.device_address, 'text', "Received payment in wrong asset");
+          if (row.expected_amount !== paid) {
+            return device.sendMessageToDevice(row.device_address, 'text', "Received incorrect amount from you: expected " + row.expected_amount + " Bosch Coins, received " + paid + " bytes.  The payment is ignored.");
+          }
 
+          db.query("UPDATE states SET pay_date=" + db.getNow() + ", unit=?, step='unconfirmed_payment' WHERE state_id=?", [row.unit, row.state_id]);
+          device.sendMessageToDevice(row.device_address, 'text', `We're pouring your coffee now while we are waiting for confirmation of your payment.`);
+          console.log(row)
+            coffee.startCoffee( order );
+            //socket.coffeePaid();
 
-          coffeeController.startCoffee( JSON.parse(order.coffee) );
-          socket.coffeePaid();
-
-      });
-    }
-  );
+        });
+      }
+    );
+  } catch(e) {
+    console.error(e);
+  }
 });
 
 eventBus.on('my_transactions_became_stable', function (arrUnits) {
