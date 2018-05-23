@@ -1,7 +1,5 @@
 /*jslint node: true */
 "use strict";
-/* rpi build flag */
-var RpiBuild = process.env.RPI ? true : false;
 
 const conf = require('byteballcore/conf.js');
 const device = require('byteballcore/device.js');
@@ -12,10 +10,7 @@ const db = require('byteballcore/db.js');
 const eventBus = require('byteballcore/event_bus.js');
 const desktopApp = require('byteballcore/desktop_app.js');
 
-
-const gpio = RpiBuild ? require('rpi-gpio') : false;
-
-const coffeeController = require('./coffee')
+const coffeeController = require('./coffee')(process.env.RPI ? true : false)
 
 const socket = require('./userInterfaceServer');
 
@@ -258,7 +253,7 @@ eventBus.on('text', function (from_address, text) {
 
 eventBus.on('new_my_transactions', function (arrUnits) {
   db.query(
-    `SELECT state_id, outputs.unit, device_address, states.amount AS expected_amount, states.order AS order, outputs.amount AS paid_amount, outputs.asset \n\
+    `SELECT state_id, outputs.unit, device_address, states.amount AS expected_amount, outputs.amount AS paid_amount, outputs.asset \n\
     FROM outputs JOIN states USING(address) WHERE outputs.unit IN(?) AND pay_date IS NULL`,
     [arrUnits, conf.boschCoinAssetId],
     function (rows) {
