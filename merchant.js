@@ -11,6 +11,7 @@ const db = require('byteballcore/db.js');
 const eventBus = require('byteballcore/event_bus.js');
 const desktopApp = require('byteballcore/desktop_app.js');
 const gpio = RpiBuild ? require('rpi-gpio') : false;
+const BoschCoinAssetID = 'ok0KVjTO9h5eU6klYLb0nwYFqJhcHlXBYoSgq1RF8E0=';
 
 require('byteballcore/wallet.js'); // we don't need any of its functions but it listens for hub/* messages
 
@@ -19,10 +20,9 @@ const KEYS_FILENAME = appDataDir + '/' + conf.KEYS_FILENAME;
 
 let wallet;
 
-const arrToppings = {
-  hawaiian: {name: 'Hawaiian'},
-  pepperoni: {name: 'Pepperoni'},
-  mexican: {name: 'Mexican'}
+const arrCoffees = {
+  normal: {name: 'Normal', price: conf.NormalCoffeePrice },
+  strong: {name: 'Strong', price: conf.StrongCoffeePrice },
 };
 
 const arrYesNoAnswers = {
@@ -42,11 +42,11 @@ if (RpiBuild) {
 }
 
 
-function getToppingsList() {
+function getCoffeeList() {
   var arrItems = [];
-  for (var code in arrToppings)
-    arrItems.push('[' + arrToppings[code].name + '](command:' + code + ')');
-  return arrItems.join("\t");
+  for (var code in arrCoffees)
+    arrItems.push('[' + arrCoffees[code].name + ' '+arrCoffees[code].price + '](command:' + code + ')' + ' BC \n');
+  return arrItems.join("");
 }
 
 function getYesNoList() {
@@ -120,7 +120,7 @@ function readCurrentState(device_address, handleState) {
 }
 
 function createNewSession(device_address, onDone) {
-  var step = 'waiting_for_choice_of_pizza';
+  var step = 'waiting_for_choice_of_coffee';
   db.query("INSERT INTO states (device_address, step, `order`) VALUES (?,?,'{}')", [device_address, step], function () {
     if (onDone)
       onDone();
@@ -202,7 +202,7 @@ eventBus.on('paired', function (from_address) {
   if (!wallet)
     return handleNoWallet(from_address);
   createNewSession(from_address, function () {
-    device.sendMessageToDevice(from_address, 'text', "Hi! Choose your pizza:\n" + getToppingsList() + "\nAll pizzas are at 1 byte.");
+    device.sendMessageToDevice(from_address, 'text', "Hi! Choose your coffee:\n" + getCoffeeList() + "\n");
   });
 });
 
@@ -212,42 +212,27 @@ eventBus.on('text', function (from_address, text) {
   text = text.trim().toLowerCase();
   readCurrentState(from_address, function (state) {
 
+console.log("current state.step: " + state.step);
     switch (state.step) {
-      case 'waiting_for_choice_of_pizza':
-        if (!arrToppings[text])
-          return device.sendMessageToDevice(from_address, 'text', "Please choose one of the toppings available:\n" + getToppingsList());
-        state.order.pizza = text;
-        state.step = 'waiting_for_choice_of_cola';
-        updateState(state);
-        device.sendMessageToDevice(from_address, 'text', arrToppings[text].name + " at 1 bytes.  Add a cola (1 bytes)?\n" + getYesNoList());
-        break;
-
-      case 'waiting_for_choice_of_cola':
-        if (!arrYesNoAnswers[text])
-          return device.sendMessageToDevice(from_address, 'text', "Add a cola (1 bytes)?  Please click Yes or No above.");
+      case 'waiting_for_choice_of_coffee':
+        if (!arrCoffees[text])
+          return device.sendMessageToDevice(from_address, 'text', "Please choose your coffee:\n" + getCoffeeList());
         walletDefinedByKeys.issueNextAddress(wallet, 0, function (objAddress) {
-          state.address = objAddress.address;
-          state.order.cola = text;
-          state.step = 'waiting_for_payment';
-          state.amount = 1;
-          var response = 'Your order: ' + arrToppings[state.order.pizza].name;
-          if (state.order.cola === 'yes') {
-            state.amount += 1;
-            response += ' and Cola';
-          }
-          response += ".\nOrder total is " + state.amount + " bytes.  Please pay.\n[" + state.amount + " bytes](byteball:" + state.address + "?amount=" + state.amount + ")";
+	        state.address = objAddress.address;
+          state.order.coffee = text;
+	        state.step = 'waiting_for_payment';
+	        state.amount = 1;
+          var response = "You've ordered " + state.amount + " " + arrCoffees[state.order.coffee].name + " Coffee. Please pay.\n[" + state.amount + " bytes](byteball:" + state.address + "?amount=" + arrCoffees[state.order.coffee].price*100000 + "&asset=" + encodeURIComponent(BoschCoinAssetID) +")";
           updateState(state);
           device.sendMessageToDevice(from_address, 'text', response);
-        });
-        break;
-
+	      });
+      break;
       case 'waiting_for_payment':
-
         if (text !== 'cancel')
           return device.sendMessageToDevice(from_address, 'text', "Waiting for your payment.  If you want to cancel the order and start over, click [Cancel](command:cancel).");
         cancelState(state);
         createNewSession(from_address, function () {
-          device.sendMessageToDevice(from_address, 'text', "Order canceled.\nChoose your pizza:\n" + getToppingsList() + "\nAll pizzas are at 10,000 bytes.");
+          device.sendMessageToDevice(from_address, 'text', "Order canceled.\nChoose your coffee:\n" + getCoffeeList());
         });
         break;
 
@@ -259,9 +244,9 @@ eventBus.on('text', function (from_address, text) {
       case 'doublespend':
         createNewSession(from_address, function () {
           var response = (state.step === 'done')
-            ? "The order was paid and your pizza sent to you.\nIf you want to order another pizza,"
+            ? "The order was paid and your coffee will be dispensed.\nIf you want to order another coffee,"
             : "Your payment appeared to be double-spend and was rejected.\nIf you want to make a new order,";
-          response += " choose the topping:\n" + getToppingsList() + "\nAll pizzas are at 10,000 bytes.";
+          response += " choose the coffee:\n" + getCoffeeList();
           device.sendMessageToDevice(from_address, 'text', response);
         });
         break;
@@ -275,11 +260,13 @@ eventBus.on('text', function (from_address, text) {
 
 eventBus.on('new_my_transactions', function (arrUnits) {
   db.query(
-    "SELECT state_id, outputs.unit, device_address, states.amount AS expected_amount, outputs.amount AS paid_amount \n\
-    FROM outputs JOIN states USING(address) WHERE outputs.unit IN(?) AND outputs.asset IS NULL AND pay_date IS NULL",
-    [arrUnits],
+    `SELECT state_id, outputs.unit, device_address, states.amount AS expected_amount, outputs.amount AS paid_amount, outputs.asset \n\
+    FROM outputs JOIN states USING(address) WHERE outputs.unit IN(?) AND pay_date IS NULL`,
+    [arrUnits, BoschCoinAssetID],
     function (rows) {
       rows.forEach(function (row) {
+	if (row.asset !== BoschCoinAssetID)
+	  return device.sendMessageToDevice(row.device_address, 'text', "Received payment in wrong asset");
         if (row.expected_amount !== row.paid_amount) {
           return device.sendMessageToDevice(row.device_address, 'text', "Received incorect amount from you: expected " + row.expected_amount + " bytes, received " + row.paid_amount + " bytes.  The payment is ignored.");
         }
