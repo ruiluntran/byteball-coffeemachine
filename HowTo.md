@@ -21,6 +21,8 @@
 5. Copy & Paste the content from the merchant.sql (project folder) file into the console
 6. Run the app with ````$ node merchant````
 
+### Assets which are used
+- Bosch Coins (ok0KVjTO9h5eU6klYLb0nwYFqJhcHlXBYoSgq1RF8E0=)
 
 
 ### Contributors
