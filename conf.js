@@ -21,4 +21,4 @@ exports.account = 2;
 exports.homeDeviceAddress = '073BIUYNKEKYXSJCUAKKXZPXMMVAOX3YN';
 
 
-console.log('finished merchant conf');
+console.log('finished bosch coffe machine conf');

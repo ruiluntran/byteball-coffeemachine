@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "bitcore-lib": "^0.13.14",
-    "byteballcore": "git+https://github.com/byteball/byteballcore.git"
+    "byteballcore": "git+https://github.com/byteball/byteballcore.git",
+    "rpi-gpio": "^0.9.1"
   }
 }

@@ -20,6 +20,7 @@
 4. Edit the byteball-light.sqlite with sqlite3 ````$ sqlite3 byteball-light.sqlite````
 5. Copy & Paste the content from the merchant.sql (project folder) file into the console
 6. Run the app with ````$ node merchant````
+7. To run the app for RaspberryPi please set RPI flag to true. ````$ RPI=true node merchant.js
 
 
 
