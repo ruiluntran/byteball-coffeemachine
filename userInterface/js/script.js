@@ -6,7 +6,7 @@ var prices;
 $(document).ready(function () {
   qrCodeWidth = ($(window).width() / 2) - 40;
 
-  $.get('http://localhost:3001/prices', function (data) {
+  $.get('/prices', function (data) {
     prices = data;
     $('#coffee-normal').addClass(activeButtonClass);
     setPrice(prices.normal);
@@ -46,7 +46,7 @@ button.on('click', function () {
 function generateNewQRcode(content) {
   $('#qrcode').html("");
   new QRCode('qrcode', {
-    text: content,
+    text: 'byteball:'+content,
     width: qrCodeWidth,
     height: qrCodeWidth,
     colorDark: "#EC1B24",
