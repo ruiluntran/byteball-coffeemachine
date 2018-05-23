@@ -248,8 +248,6 @@ eventBus.on('text', function (from_address, text) {
 
       case 'unconfirmed_payment':
         device.sendMessageToDevice(from_address, 'text', "We're pouring your coffee now while we are waiting for confirmation of your payment.");
-        startCoffee();
-
           break;
 
       case 'done':
@@ -282,7 +280,9 @@ eventBus.on('new_my_transactions', function (arrUnits) {
         }
 
         db.query("UPDATE states SET pay_date=" + db.getNow() + ", unit=?, step='unconfirmed_payment' WHERE state_id=?", [row.unit, row.state_id]);
-        device.sendMessageToDevice(row.device_address, 'text', "Received your payment, please wait a few minutes while it is still unconfirmed.");
+        device.sendMessageToDevice(row.device_address, 'text', "We're pouring your coffee now while we are waiting for confirmation of your payment.");
+          startCoffee();
+
       });
     }
   );
