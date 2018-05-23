@@ -10,7 +10,8 @@ const db = require('byteballcore/db.js');
 const eventBus = require('byteballcore/event_bus.js');
 const desktopApp = require('byteballcore/desktop_app.js');
 
-const coffeeController = require('./coffee')(process.env.RPI ? true : false)
+const coffeeController = require('./coffee')
+coffeeController.init()
 
 const socket = require('./userInterfaceServer');
 
