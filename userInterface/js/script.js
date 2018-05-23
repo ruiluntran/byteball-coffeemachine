@@ -6,7 +6,7 @@ var prices;
 $(document).ready(function () {
   qrCodeWidth = ($(window).width() / 2) - 40;
 
-  $.get('/prices', function (data) {
+  $.get('http://localhost:3001/prices', function (data) {
     prices = data;
     $('#coffee-normal').addClass(activeButtonClass);
     setPrice(prices.normal);
