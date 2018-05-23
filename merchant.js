@@ -1,7 +1,8 @@
 /*jslint node: true */
 "use strict";
 /* rpi build flag */
-var RpiBuild = process.env.RPI ? process.env.RPI : false;
+var RpiBuild = process.env.RPI ? true : false;
+
 const conf = require('byteballcore/conf.js');
 const device = require('byteballcore/device.js');
 const walletDefinedByKeys = require('byteballcore/wallet_defined_by_keys.js');
@@ -10,11 +11,13 @@ const fs = require('fs');
 const db = require('byteballcore/db.js');
 const eventBus = require('byteballcore/event_bus.js');
 const desktopApp = require('byteballcore/desktop_app.js');
+
+
 const gpio = RpiBuild ? require('rpi-gpio') : false;
 
-const socket = require('./userInterfaceServer');
+const coffeeController = require('./coffee')
 
-const BoschCoinAssetID = 'ok0KVjTO9h5eU6klYLb0nwYFqJhcHlXBYoSgq1RF8E0=';
+const socket = require('./userInterfaceServer');
 
 require('byteballcore/wallet.js'); // we don't need any of its functions but it listens for hub/* messages
 
@@ -33,16 +36,7 @@ const arrYesNoAnswers = {
   no: 'No'
 }
 
-initGPIO();
 
-function initGPIO() {
-  console.log('###################################################################################################');
-  console.log('Init GPIO');
-  console.log('###################################################################################################');
-  if (RpiBuild) {
-    gpio.setup(15, gpio.DIR_OUT);
-  }
-}
 
 
 function getCoffeeList() {
@@ -226,7 +220,7 @@ eventBus.on('text', function (from_address, text) {
           state.order.coffee = text;
           state.step = 'waiting_for_payment';
           state.amount = 1;
-          var response = "You've ordered " + state.amount + " " + arrCoffees[state.order.coffee].name + " Coffee. Please pay.\n[" + state.amount + " bytes](byteball:" + state.address + "?amount=" + arrCoffees[state.order.coffee].price * 100000 + "&asset=" + encodeURIComponent(BoschCoinAssetID) + ")";
+          var response = "You've ordered " + state.amount + " " + arrCoffees[state.order.coffee].name + " Coffee. Please pay.\n[" + state.amount + " bytes](byteball:" + state.address + "?amount=" + arrCoffees[state.order.coffee].price * 100000 + "&asset=" + encodeURIComponent(conf.boschCoinAssetId) + ")";
           updateState(state);
           device.sendMessageToDevice(from_address, 'text', response);
         });
@@ -264,12 +258,12 @@ eventBus.on('text', function (from_address, text) {
 
 eventBus.on('new_my_transactions', function (arrUnits) {
   db.query(
-    `SELECT state_id, outputs.unit, device_address, states.amount AS expected_amount, outputs.amount AS paid_amount, outputs.asset \n\
+    `SELECT state_id, outputs.unit, device_address, states.amount AS expected_amount, states.order AS order, outputs.amount AS paid_amount, outputs.asset \n\
     FROM outputs JOIN states USING(address) WHERE outputs.unit IN(?) AND pay_date IS NULL`,
-    [arrUnits, BoschCoinAssetID],
+    [arrUnits, conf.boschCoinAssetId],
     function (rows) {
       rows.forEach(function (row) {
-        if (row.asset !== BoschCoinAssetID)
+        if (row.asset !== conf.boschCoinAssetId)
           return device.sendMessageToDevice(row.device_address, 'text', "Received payment in wrong asset");
         if (row.expected_amount !== row.paid_amount) {
           return device.sendMessageToDevice(row.device_address, 'text', "Received incorect amount from you: expected " + row.expected_amount + " bytes, received " + row.paid_amount + " bytes.  The payment is ignored.");
@@ -277,10 +271,11 @@ eventBus.on('new_my_transactions', function (arrUnits) {
 
         db.query("UPDATE states SET pay_date=" + db.getNow() + ", unit=?, step='unconfirmed_payment' WHERE state_id=?", [row.unit, row.state_id]);
         device.sendMessageToDevice(row.device_address, 'text', "We're pouring your coffee now while we are waiting for confirmation of your payment.");
-        if (RpiBuild) {
-          startCoffee();
+
+
+          coffeeController.startCoffee( JSON.parse(order.coffee) );
           socket.coffeePaid();
-        }
+
       });
     }
   );
@@ -309,24 +304,3 @@ eventBus.on('my_transactions_became_stable', function (arrUnits) {
 });
 
 
-function startCoffee() {
-  console.log('###################################################################################################');
-  console.log('Start Coffee');
-  console.log('###################################################################################################');
-  gpio.write(15, true, (err) => {
-    if (err) {
-      throw err
-    }
-    console.log('###################################################################################################');
-    console.log('Coffee served');
-    console.log('###################################################################################################');
-    setTimeout(() => {
-      gpio.write(15, false, () => {
-        console.log('###################################################################################################');
-        console.log('Pin reset to default');
-        console.log('###################################################################################################');
-      });
-    }, 500)
-
-  });
-}
