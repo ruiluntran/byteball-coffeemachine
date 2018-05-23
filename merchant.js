@@ -12,8 +12,6 @@ const eventBus = require('byteballcore/event_bus.js');
 const desktopApp = require('byteballcore/desktop_app.js');
 const gpio = RpiBuild ? require('rpi-gpio') : false;
 const BoschCoinAssetID = 'ok0KVjTO9h5eU6klYLb0nwYFqJhcHlXBYoSgq1RF8E0=';
-const NormalCoffeePrice = 0.5;
-const StrongCoffeePrice = 1;
 
 require('byteballcore/wallet.js'); // we don't need any of its functions but it listens for hub/* messages
 
@@ -23,8 +21,8 @@ const KEYS_FILENAME = appDataDir + '/' + conf.KEYS_FILENAME;
 let wallet;
 
 const arrCoffees = {
-  normal: {name: 'Normal', price: NormalCoffeePrice },
-  strong: {name: 'Strong', price: StrongCoffeePrice },
+  normal: {name: 'Normal', price: conf.NormalCoffeePrice },
+  strong: {name: 'Strong', price: conf.StrongCoffeePrice },
 };
 
 const arrYesNoAnswers = {
@@ -46,7 +44,6 @@ if (RpiBuild) {
 
 function getCoffeeList() {
   var arrItems = [];
-  var CoffeePrice = NormalCoffeePrice;
   for (var code in arrCoffees)
     arrItems.push('[' + arrCoffees[code].name + ' '+arrCoffees[code].price + '](command:' + code + ')' + ' BC \n');
   return arrItems.join("");
