@@ -16,9 +16,9 @@ exports.permanent_pairing_secret = '0000';
 exports.KEYS_FILENAME = 'keys.json';
 
 // home wallet (replace these values with the properties of your wallet that is to collect the revenue from sales)
-exports.xPubKey = 'xpub6Bi62aDKU7keBAEs2azB7J4kFHfX6ZgTTKehVgxPJBy2wcZtrySCK1D395W523Y93wPfvWs2Xbna4tpy8eV1yw3vDVnUWhAcrdYP6Co8y8m';
-exports.account = 2;
-exports.homeDeviceAddress = '073BIUYNKEKYXSJCUAKKXZPXMMVAOX3YN';
+exports.xPubKey = 'xpub6DSdVfdW9Un8m7sWjeEmBbnVPQ23kRH7aw1ajpDrMJJvPQWPTYrfAQhRRvmAWCMWbSTvz9P98poyid1uEo2x1EpniNv5AKpNZ2RccDa8fgY';
+exports.account = 1;
+exports.homeDeviceAddress = '0VTMKHXUPBSPEBDKLGZXU6TADOHX7XLNP';
 
 
-console.log('finished merchant conf');
+console.log('finished bosch coffe machine conf');
