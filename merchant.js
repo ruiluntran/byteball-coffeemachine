@@ -241,29 +241,6 @@ eventBus.on('text', function (from_address, text) {
 
 
 eventBus.on('new_my_transactions', function (arrUnits) {
-<<<<<<< HEAD
-  db.query(
-    `SELECT state_id, outputs.unit, device_address, states.amount AS expected_amount, outputs.amount AS paid_amount, outputs.asset \n\
-    FROM outputs JOIN states USING(address) WHERE outputs.unit IN(?) AND pay_date IS NULL`,
-    [arrUnits],
-    function (rows) {
-      rows.forEach(function (row) {
-        if (row.asset !== BoschCoinAssetID)
-          return device.sendMessageToDevice(row.device_address, 'text', "Received payment in wrong asset");
-        if (row.expected_amount !== row.paid_amount) {
-          return device.sendMessageToDevice(row.device_address, 'text', "Received incorect amount from you: expected " + row.expected_amount + " bytes, received " + row.paid_amount + " bytes.  The payment is ignored.");
-        }
-
-        db.query("UPDATE states SET pay_date=" + db.getNow() + ", unit=?, step='unconfirmed_payment' WHERE state_id=?", [row.unit, row.state_id]);
-        device.sendMessageToDevice(row.device_address, 'text', "We're pouring your coffee now while we are waiting for confirmation of your payment.");
-        if (RpiBuild) {
-          startCoffee();
-          socket.coffeePaid();
-        }
-      });
-    }
-  );
-
   try {
     db.query(
       "SELECT state_id, outputs.unit, device_address, states.amount AS expected_amount, `order`, outputs.amount AS paid_amount, outputs.asset \n\
@@ -292,7 +269,6 @@ eventBus.on('new_my_transactions', function (arrUnits) {
   } catch(e) {
     console.error(e);
   }
-
 });
 
 eventBus.on('my_transactions_became_stable', function (arrUnits) {
