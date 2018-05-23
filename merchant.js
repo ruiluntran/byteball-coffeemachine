@@ -263,7 +263,7 @@ eventBus.on('new_my_transactions', function (arrUnits) {
       });
     }
   );
-=======
+
   try {
     db.query(
       "SELECT state_id, outputs.unit, device_address, states.amount AS expected_amount, `order`, outputs.amount AS paid_amount, outputs.asset \n\
@@ -292,7 +292,7 @@ eventBus.on('new_my_transactions', function (arrUnits) {
   } catch(e) {
     console.error(e);
   }
->>>>>>> 03d7098a6ebeffd4f5b78c9a0660d4d78bb92155
+
 });
 
 eventBus.on('my_transactions_became_stable', function (arrUnits) {
