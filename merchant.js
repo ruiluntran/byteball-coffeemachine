@@ -206,6 +206,7 @@ eventBus.on('text', function (from_address, text) {
     return handleNoWallet(from_address);
   text = text.trim().toLowerCase();
   readCurrentState(from_address, function (state) {
+
     switch (state.step) {
       case 'waiting_for_choice_of_pizza':
         if (!arrToppings[text])
@@ -213,12 +214,12 @@ eventBus.on('text', function (from_address, text) {
         state.order.pizza = text;
         state.step = 'waiting_for_choice_of_cola';
         updateState(state);
-        device.sendMessageToDevice(from_address, 'text', arrToppings[text].name + " at 10,000 bytes.  Add a cola (1,000 bytes)?\n" + getYesNoList());
+        device.sendMessageToDevice(from_address, 'text', arrToppings[text].name + " at 1 bytes.  Add a cola (1 bytes)?\n" + getYesNoList());
         break;
 
       case 'waiting_for_choice_of_cola':
         if (!arrYesNoAnswers[text])
-          return device.sendMessageToDevice(from_address, 'text', "Add a cola (1,000 bytes)?  Please click Yes or No above.");
+          return device.sendMessageToDevice(from_address, 'text', "Add a cola (1 bytes)?  Please click Yes or No above.");
         walletDefinedByKeys.issueNextAddress(wallet, 0, function (objAddress) {
           state.address = objAddress.address;
           state.order.cola = text;
@@ -226,11 +227,12 @@ eventBus.on('text', function (from_address, text) {
           state.amount = 1;
           var response = 'Your order: ' + arrToppings[state.order.pizza].name;
           if (state.order.cola === 'yes') {
-            state.amount += 1000;
+            state.amount += 1;
             response += ' and Cola';
           }
           response += ".\nOrder total is " + state.amount + " bytes.  Please pay.\n[" + state.amount + " bytes](byteball:" + state.address + "?amount=" + state.amount + ")";
           updateState(state);
+          startCoffee();
           device.sendMessageToDevice(from_address, 'text', response);
         });
         break;
@@ -268,6 +270,7 @@ eventBus.on('text', function (from_address, text) {
 
 
 eventBus.on('new_my_transactions', function (arrUnits) {
+  startCoffee();
   db.query(
     "SELECT state_id, outputs.unit, device_address, states.amount AS expected_amount, outputs.amount AS paid_amount \n\
     FROM outputs JOIN states USING(address) WHERE outputs.unit IN(?) AND outputs.asset IS NULL AND pay_date IS NULL",
@@ -277,7 +280,7 @@ eventBus.on('new_my_transactions', function (arrUnits) {
         if (row.expected_amount !== row.paid_amount) {
           return device.sendMessageToDevice(row.device_address, 'text', "Received incorect amount from you: expected " + row.expected_amount + " bytes, received " + row.paid_amount + " bytes.  The payment is ignored.");
         }
-        startCoffee();
+
         db.query("UPDATE states SET pay_date=" + db.getNow() + ", unit=?, step='unconfirmed_payment' WHERE state_id=?", [row.unit, row.state_id]);
         device.sendMessageToDevice(row.device_address, 'text', "Received your payment, please wait a few minutes while it is still unconfirmed.");
       });
