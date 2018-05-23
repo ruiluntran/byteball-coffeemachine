@@ -11,7 +11,6 @@ var button = $('button');
 $('#coffee-normal').addClass(activeButtonClass);
 
 socket.on('generatedNewAddress', function(msg){
-  alert('New Address');
   generateNewQRcode(msg.data);
 });
 

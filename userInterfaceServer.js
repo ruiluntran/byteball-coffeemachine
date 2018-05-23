@@ -3,7 +3,7 @@ const express = require('express');
 const app = express();
 const http = require('http').Server(app);
 
-const port = 3000;
+const port = 3001;
 app.use(express.static('userInterface'));
 
 
@@ -24,7 +24,7 @@ module.exports = {
     io.emit('generatedNewAddress', {data: address});
   },
   coffeePaid: () => {
-    io.emit('coffeePaid');
+    io.emit('coffeePaid',{});
   }
 
 
