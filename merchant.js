@@ -1,7 +1,6 @@
 /*jslint node: true */
 "use strict";
-/* rpi build flag */
-var RpiBuild = process.env.RPI ? process.env.RPI : false;
+
 const conf = require('byteballcore/conf.js');
 const device = require('byteballcore/device.js');
 const walletDefinedByKeys = require('byteballcore/wallet_defined_by_keys.js');
@@ -10,11 +9,13 @@ const fs = require('fs');
 const db = require('byteballcore/db.js');
 const eventBus = require('byteballcore/event_bus.js');
 const desktopApp = require('byteballcore/desktop_app.js');
-const gpio = RpiBuild ? require('rpi-gpio') : false;
+
+const coffeeController = require('./coffee');
+
+let coffee = new coffeeController();
+coffee.init(process.env.RPI)
 
 const socket = require('./userInterfaceServer');
-
-const BoschCoinAssetID = 'ok0KVjTO9h5eU6klYLb0nwYFqJhcHlXBYoSgq1RF8E0=';
 
 require('byteballcore/wallet.js'); // we don't need any of its functions but it listens for hub/* messages
 
@@ -28,35 +29,11 @@ const arrCoffees = {
   strong: {name: 'Strong', price: conf.StrongCoffeePrice},
 };
 
-const arrYesNoAnswers = {
-  yes: 'Yes',
-  no: 'No'
-};
-
-initGPIO();
-
-function initGPIO() {
-  console.log('###################################################################################################');
-  console.log('Init GPIO');
-  console.log('###################################################################################################');
-  if (RpiBuild) {
-    gpio.setup(15, gpio.DIR_OUT);
-  }
-}
-
-
 function getCoffeeList() {
   var arrItems = [];
   for (var code in arrCoffees)
     arrItems.push('[' + arrCoffees[code].name + ' ' + arrCoffees[code].price + '](command:' + code + ')' + ' BC \n');
   return arrItems.join("");
-}
-
-function getYesNoList() {
-  var arrItems = [];
-  for (var code in arrYesNoAnswers)
-    arrItems.push('[' + arrYesNoAnswers[code] + '](command:' + code + ')');
-  return arrItems.join("\t");
 }
 
 function replaceConsoleLog() {
@@ -226,8 +203,8 @@ eventBus.on('text', function (from_address, text) {
           state.address = objAddress.address;
           state.order.coffee = text;
           state.step = 'waiting_for_payment';
-          state.amount = 1;
-          var response = "You've ordered " + state.amount + " " + arrCoffees[state.order.coffee].name + " Coffee. Please pay.\n[" + state.amount + " bytes](byteball:" + state.address + "?amount=" + arrCoffees[state.order.coffee].price * 100000 + "&asset=" + encodeURIComponent(BoschCoinAssetID) + ")";
+          state.amount = arrCoffees[state.order.coffee].price;
+          var response = "You've ordered " + state.amount + " " + arrCoffees[state.order.coffee].name + " Coffee. Please pay.\n[" + state.amount + " bytes](byteball:" + state.address + "?amount=" + arrCoffees[state.order.coffee].price * 100000 + "&asset=" + encodeURIComponent(conf.boschCoinAssetId) + ")";
           updateState(state);
           device.sendMessageToDevice(from_address, 'text', response);
         });
@@ -264,6 +241,7 @@ eventBus.on('text', function (from_address, text) {
 
 
 eventBus.on('new_my_transactions', function (arrUnits) {
+<<<<<<< HEAD
   db.query(
     `SELECT state_id, outputs.unit, device_address, states.amount AS expected_amount, outputs.amount AS paid_amount, outputs.asset \n\
     FROM outputs JOIN states USING(address) WHERE outputs.unit IN(?) AND pay_date IS NULL`,
@@ -285,6 +263,36 @@ eventBus.on('new_my_transactions', function (arrUnits) {
       });
     }
   );
+=======
+  try {
+    db.query(
+      "SELECT state_id, outputs.unit, device_address, states.amount AS expected_amount, `order`, outputs.amount AS paid_amount, outputs.asset \n\
+      FROM outputs JOIN states USING(address) WHERE outputs.unit IN(?) AND pay_date IS NULL",
+      [arrUnits],
+      function (rows) {
+        rows.forEach(function (row) {
+          const paid = row.paid_amount / 100000;
+          const order = JSON.parse(row.order).coffee;
+
+          if (row.asset !== conf.boschCoinAssetId)
+            return device.sendMessageToDevice(row.device_address, 'text', "Received payment in wrong asset");
+          if (row.expected_amount !== paid) {
+            return device.sendMessageToDevice(row.device_address, 'text', "Received incorrect amount from you: expected " + row.expected_amount + " Bosch Coins, received " + paid + " bytes.  The payment is ignored.");
+          }
+
+          db.query("UPDATE states SET pay_date=" + db.getNow() + ", unit=?, step='unconfirmed_payment' WHERE state_id=?", [row.unit, row.state_id]);
+          device.sendMessageToDevice(row.device_address, 'text', `We're pouring your coffee now while we are waiting for confirmation of your payment.`);
+          console.log(row)
+            coffee.startCoffee( order );
+            //socket.coffeePaid();
+
+        });
+      }
+    );
+  } catch(e) {
+    console.error(e);
+  }
+>>>>>>> 03d7098a6ebeffd4f5b78c9a0660d4d78bb92155
 });
 
 eventBus.on('my_transactions_became_stable', function (arrUnits) {
@@ -318,24 +326,3 @@ function createNewAddress() {
 }
 
 
-function startCoffee() {
-  console.log('###################################################################################################');
-  console.log('Start Coffee');
-  console.log('###################################################################################################');
-  gpio.write(15, true, (err) => {
-    if (err) {
-      throw err
-    }
-    console.log('###################################################################################################');
-    console.log('Coffee served');
-    console.log('###################################################################################################');
-    setTimeout(() => {
-      gpio.write(15, false, () => {
-        console.log('###################################################################################################');
-        console.log('Pin reset to default');
-        console.log('###################################################################################################');
-      });
-    }, 500)
-
-  });
-}
