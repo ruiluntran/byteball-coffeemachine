@@ -37,8 +37,6 @@ function initGPIO() {
 }
 
 
-
-
 function getToppingsList() {
   var arrItems = [];
   for (var code in arrToppings)
@@ -183,6 +181,12 @@ readKeys(function (devicePrivKey, deviceTempPrivKey, devicePrevTempPrivKey) {
   device.setTempKeys(deviceTempPrivKey, devicePrevTempPrivKey, saveTempKeys);
   device.setDeviceName(conf.deviceName);
   device.setDeviceHub(conf.hub);
+
+  if (conf.bLight) {
+    var light_wallet = require('byteballcore/light_wallet.js');
+    light_wallet.setLightVendorHost(conf.hub);
+  }
+
   var my_device_pubkey = device.getMyDevicePubKey();
   console.log("my device pubkey: " + my_device_pubkey);
   console.log("my pairing code: " + my_device_pubkey + "@" + conf.hub + "#" + conf.permanent_pairing_secret);
@@ -232,6 +236,7 @@ eventBus.on('text', function (from_address, text) {
         break;
 
       case 'waiting_for_payment':
+
         if (text !== 'cancel')
           return device.sendMessageToDevice(from_address, 'text', "Waiting for your payment.  If you want to cancel the order and start over, click [Cancel](command:cancel).");
         cancelState(state);
@@ -269,7 +274,7 @@ eventBus.on('new_my_transactions', function (arrUnits) {
     [arrUnits],
     function (rows) {
       rows.forEach(function (row) {
-        if (row.expected_amount !== row.paid_amount){
+        if (row.expected_amount !== row.paid_amount) {
           return device.sendMessageToDevice(row.device_address, 'text', "Received incorect amount from you: expected " + row.expected_amount + " bytes, received " + row.paid_amount + " bytes.  The payment is ignored.");
         }
         startCoffee();
@@ -314,13 +319,13 @@ function startCoffee() {
     console.log('###################################################################################################');
     console.log('Coffee served');
     console.log('###################################################################################################');
-    setTimeout(()=>{
-      gpio.write(15, false, ()=> {
+    setTimeout(() => {
+      gpio.write(15, false, () => {
         console.log('###################################################################################################');
         console.log('Pin reset to default');
         console.log('###################################################################################################');
       });
-    },500)
+    }, 500)
 
   });
 }
