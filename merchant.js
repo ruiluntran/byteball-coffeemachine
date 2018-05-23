@@ -13,7 +13,7 @@ const desktopApp = require('byteballcore/desktop_app.js');
 const coffeeController = require('./coffee');
 
 let coffee = new coffeeController();
-coffee.init()
+coffee.init(process.env.RPI)
 
 const socket = require('./userInterfaceServer');
 

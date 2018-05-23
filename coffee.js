@@ -19,8 +19,8 @@ let coffeeController = function() {
             console.log('Raspberry Pi detected, enabling Gpio ports')
             this.rpi = true;
             this.gpio = require('rpi-gpio');
-            this.gpio.setup(this.coffeePort, gpio.DIR_OUT);
-            this.gpio.setup(this.favoriteSelectorPort, gpio.DIR_OUT);
+            this.gpio.setup(this.coffeePort, this.gpio.DIR_OUT);
+            this.gpio.setup(this.favoriteSelectorPort, this.gpio.DIR_OUT);
         } else {
             console.log('Running in Testmode, Gpio ports not enabled')
         }
@@ -79,12 +79,12 @@ let coffeeController = function() {
     }
 
     this.checkCurrentSelection = () => {
-        return this._currentSelection;
+        return Promise.resolve(this._currentSelection);
     };
 
     this._pushButton = port => {
 
-        return new Promise(resolve, reject => {
+        return new Promise((resolve, reject)=> {
 
             this.gpio.write(port, true, (err) => {
                 if (err) {
@@ -100,7 +100,7 @@ let coffeeController = function() {
                         }
 
                         console.log('Port reset to default after 500ms');
-                        resolve(true)
+                        setTimeout(()=> {resolve(true);}, 1000);
                     });
                 }, 500)
             });
