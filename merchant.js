@@ -1,5 +1,7 @@
 /*jslint node: true */
 "use strict";
+/* rpi build flag */
+var RpiBuild = process.env.RPI ? process.env.RPI : false;
 const conf = require('byteballcore/conf.js');
 const device = require('byteballcore/device.js');
 const walletDefinedByKeys = require('byteballcore/wallet_defined_by_keys.js');
@@ -8,7 +10,8 @@ const fs = require('fs');
 const db = require('byteballcore/db.js');
 const eventBus = require('byteballcore/event_bus.js');
 const desktopApp = require('byteballcore/desktop_app.js');
-const gpio = require('rpi-gpio');
+const gpio = RpiBuild ? require('rpi-gpio') : false;
+
 require('byteballcore/wallet.js'); // we don't need any of its functions but it listens for hub/* messages
 
 const appDataDir = desktopApp.getAppDataDir();
@@ -33,7 +36,9 @@ function initGPIO() {
   console.log('###################################################################################################');
   console.log('Init GPIO');
   console.log('###################################################################################################');
-  gpio.setup(15, gpio.DIR_OUT);
+if (RpiBuild) {
+    gpio.setup(15, gpio.DIR_OUT);
+  }
 }
 
 
@@ -232,7 +237,6 @@ eventBus.on('text', function (from_address, text) {
           }
           response += ".\nOrder total is " + state.amount + " bytes.  Please pay.\n[" + state.amount + " bytes](byteball:" + state.address + "?amount=" + state.amount + ")";
           updateState(state);
-          startCoffee();
           device.sendMessageToDevice(from_address, 'text', response);
         });
         break;
@@ -248,8 +252,8 @@ eventBus.on('text', function (from_address, text) {
         break;
 
       case 'unconfirmed_payment':
-        device.sendMessageToDevice(from_address, 'text', "We are waiting for confirmation of your payment.  Be patient.");
-        break;
+        device.sendMessageToDevice(from_address, 'text', "We're pouring your coffee now while we are waiting for confirmation of your payment.");
+          break;
 
       case 'done':
       case 'doublespend':
@@ -270,7 +274,6 @@ eventBus.on('text', function (from_address, text) {
 
 
 eventBus.on('new_my_transactions', function (arrUnits) {
-  startCoffee();
   db.query(
     "SELECT state_id, outputs.unit, device_address, states.amount AS expected_amount, outputs.amount AS paid_amount \n\
     FROM outputs JOIN states USING(address) WHERE outputs.unit IN(?) AND outputs.asset IS NULL AND pay_date IS NULL",
@@ -282,7 +285,10 @@ eventBus.on('new_my_transactions', function (arrUnits) {
         }
 
         db.query("UPDATE states SET pay_date=" + db.getNow() + ", unit=?, step='unconfirmed_payment' WHERE state_id=?", [row.unit, row.state_id]);
-        device.sendMessageToDevice(row.device_address, 'text', "Received your payment, please wait a few minutes while it is still unconfirmed.");
+        device.sendMessageToDevice(row.device_address, 'text', "We're pouring your coffee now while we are waiting for confirmation of your payment.");
+        if(RpiBuild) {
+            startCoffee();
+	      }  
       });
     }
   );
