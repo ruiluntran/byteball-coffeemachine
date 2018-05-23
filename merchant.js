@@ -10,10 +10,7 @@ const fs = require('fs');
 const db = require('byteballcore/db.js');
 const eventBus = require('byteballcore/event_bus.js');
 const desktopApp = require('byteballcore/desktop_app.js');
-
-if (RpiBuild) {
-  const gpio = require('rpi-gpio');
-}
+const gpio = RpiBuild ? require('rpi-gpio') : false;
 
 require('byteballcore/wallet.js'); // we don't need any of its functions but it listens for hub/* messages
 
@@ -39,7 +36,7 @@ function initGPIO() {
   console.log('###################################################################################################');
   console.log('Init GPIO');
   console.log('###################################################################################################');
-  if (RpiBuild) {
+if (RpiBuild) {
     gpio.setup(15, gpio.DIR_OUT);
   }
 }
