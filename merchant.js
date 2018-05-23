@@ -174,9 +174,10 @@ db.query(
 db.query("SELECT wallet FROM wallets", function (rows) {
   if (rows.length > 1)
     throw Error('more than 1 wallet');
-  if (rows.length === 1)
+  if (rows.length === 1) {
     wallet = rows[0].wallet;
-  else
+    socket.setWallet(wallet);
+  } else
     wallet = null; // different from undefined
 });
 
@@ -266,7 +267,7 @@ eventBus.on('new_my_transactions', function (arrUnits) {
   db.query(
     `SELECT state_id, outputs.unit, device_address, states.amount AS expected_amount, outputs.amount AS paid_amount, outputs.asset \n\
     FROM outputs JOIN states USING(address) WHERE outputs.unit IN(?) AND pay_date IS NULL`,
-    [arrUnits, BoschCoinAssetID],
+    [arrUnits],
     function (rows) {
       rows.forEach(function (row) {
         if (row.asset !== BoschCoinAssetID)
@@ -307,6 +308,14 @@ eventBus.on('my_transactions_became_stable', function (arrUnits) {
     }
   );
 });
+
+function createNewAddress() {
+  if (wallet) {
+    return walletDefinedByKeys.issueNextAddress(wallet, 0, function (objAddress) {
+      return objAddress;
+    });
+  }
+}
 
 
 function startCoffee() {
