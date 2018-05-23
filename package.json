@@ -17,6 +17,9 @@
   "bugs": {
     "url": "https://github.com/byteball/byteball-merchant/issues"
   },
+  "scripts": {
+    "postinstall": "grunt prod"
+  },
   "browser": {
     "request": "browser-request",
     "secp256k1": "secp256k1/js"
@@ -24,6 +27,18 @@
   "dependencies": {
     "bitcore-lib": "^0.13.14",
     "byteballcore": "git+https://github.com/byteball/byteballcore.git",
-    "rpi-gpio": "^0.9.1"
+    "express": "^4.16.3",
+    "jquery": "^3.3.1",
+    "qrcodejs": "^1.0.0",
+    "rpi-gpio": "^0.9.1",
+    "socket.io": "^2.1.1",
+    "socket.io-client": "^2.1.1"
+  },
+  "devDependencies": {
+    "grunt": "^1.0.2",
+    "grunt-contrib-clean": "^1.1.0",
+    "grunt-contrib-copy": "^1.0.0",
+    "grunt-contrib-less": "^1.4.1",
+    "grunt-contrib-watch": "^1.1.0"
   }
 }

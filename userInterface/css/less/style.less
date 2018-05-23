@@ -1,0 +1,75 @@
+@font-face {
+  font-family: 'NotoSans';
+  src: url('/fonts/NotoSans-Regular.ttf');
+}
+
+@bosch-red: #EC1B24;
+
+html, body {
+  font-family: 'NotoSans', SansSerif, sans-serif;
+  width:100%;
+}
+
+table {
+  width: 100%;
+
+  td {
+    width: 50%;
+    padding: 20px;
+
+    &.details {
+      vertical-align: top;
+    }
+
+  }
+
+  img {
+    max-width: 100%;
+  }
+
+}
+
+.logo {
+  text-align: center;
+  img {
+    margin-top: 20px;
+    width: 60%;
+  }
+
+}
+
+
+.price {
+  margin-top: 30px;
+  text-align: center;
+  font-size: 5rem;
+}
+
+.selectType {
+  margin-top: 60px;
+  button {
+    background-color: white;
+    width: 100%;
+    color: @bosch-red;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    border: 2px solid @bosch-red;
+
+    &:active {
+      outline:0;
+    }
+
+    &:focus {
+      outline:0;
+    }
+
+    &.active {
+      background-color: @bosch-red;
+      color: white;
+    }
+
+  }
+}
