@@ -11,6 +11,7 @@ const db = require('byteballcore/db.js');
 const eventBus = require('byteballcore/event_bus.js');
 const desktopApp = require('byteballcore/desktop_app.js');
 const gpio = RpiBuild ? require('rpi-gpio') : false;
+const BoschCoinAssetID = 'ok0KVjTO9h5eU6klYLb0nwYFqJhcHlXBYoSgq1RF8E0='
 
 require('byteballcore/wallet.js'); // we don't need any of its functions but it listens for hub/* messages
 
@@ -235,7 +236,7 @@ eventBus.on('text', function (from_address, text) {
             state.amount += 1;
             response += ' and Cola';
           }
-          response += ".\nOrder total is " + state.amount + " bytes.  Please pay.\n[" + state.amount + " bytes](byteball:" + state.address + "?amount=" + state.amount + ")";
+          response += ".\nOrder total is " + state.amount + " bytes.  Please pay.\n[" + state.amount + " bytes](byteball:" + state.address + "?amount=" + state.amount + "&asset=" + encodeURIComponent(BoschCoinAssetID) +")";
           updateState(state);
           device.sendMessageToDevice(from_address, 'text', response);
         });
@@ -275,11 +276,13 @@ eventBus.on('text', function (from_address, text) {
 
 eventBus.on('new_my_transactions', function (arrUnits) {
   db.query(
-    "SELECT state_id, outputs.unit, device_address, states.amount AS expected_amount, outputs.amount AS paid_amount \n\
-    FROM outputs JOIN states USING(address) WHERE outputs.unit IN(?) AND outputs.asset IS NULL AND pay_date IS NULL",
-    [arrUnits],
+    `SELECT state_id, outputs.unit, device_address, states.amount AS expected_amount, outputs.amount AS paid_amount, outputs.asset \n\
+    FROM outputs JOIN states USING(address) WHERE outputs.unit IN(?) AND pay_date IS NULL`,
+    [arrUnits, BoschCoinAssetID],
     function (rows) {
       rows.forEach(function (row) {
+	if (row.asset !== BoschCoinAssetID)
+	  return device.sendMessageToDevice(row.device_address, 'text', "Received payment in wrong asset");
         if (row.expected_amount !== row.paid_amount) {
           return device.sendMessageToDevice(row.device_address, 'text', "Received incorect amount from you: expected " + row.expected_amount + " bytes, received " + row.paid_amount + " bytes.  The payment is ignored.");
         }
