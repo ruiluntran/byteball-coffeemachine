@@ -24,5 +24,8 @@ exports.homeDeviceAddress = '073BIUYNKEKYXSJCUAKKXZPXMMVAOX3YN';
 exports.NormalCoffeePrice = 0.5;
 exports.StrongCoffeePrice = 1;
 
+// Bosch Coin Asset id
+exports.boschCoinAssetId = 'ok0KVjTO9h5eU6klYLb0nwYFqJhcHlXBYoSgq1RF8E0=';
+
 
 console.log('finished bosch coffe machine conf');
