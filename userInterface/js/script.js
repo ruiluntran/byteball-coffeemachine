@@ -1,14 +1,22 @@
 var socket = io();
 var qrCodeWidth;
 
+var prices;
+
 $(document).ready(function () {
   qrCodeWidth = ($(window).width() / 2) - 40;
+
+  $.get('/prices', function (data) {
+    prices = data;
+    $('#coffee-normal').addClass(activeButtonClass);
+    setPrice(prices.normal);
+  })
+
 });
 
 var activeButtonClass = 'active';
 var button = $('button');
 
-$('#coffee-normal').addClass(activeButtonClass);
 
 socket.on('generatedNewAddress', function(msg){
   generateNewQRcode(msg.data);
@@ -20,6 +28,16 @@ socket.on('coffeePaid', function(){
 
 button.on('click', function () {
   var buttonId = '#' + this.id;
+
+  switch (this.id){
+    case 'coffee-normal':
+      setPrice(prices.normal);
+      break;
+    case 'coffee-strong':
+      setPrice(prices.strong);
+      break;
+  }
+
   button.removeClass(activeButtonClass);
   $(buttonId).addClass(activeButtonClass);
 });
@@ -35,4 +53,8 @@ function generateNewQRcode(content) {
     colorLight: "#ffffff",
     correctLevel: QRCode.CorrectLevel.H
   });
+}
+
+function setPrice(price) {
+  $('#price').text(price);
 }
