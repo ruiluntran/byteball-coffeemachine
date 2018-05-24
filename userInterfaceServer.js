@@ -57,6 +57,6 @@ module.exports = {
     wallet = _wallet
   },
   getSocket: () => {
-    return socket;
+    return io;
   }
 };

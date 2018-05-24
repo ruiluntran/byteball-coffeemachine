@@ -15,7 +15,6 @@ let coffee = new coffeeController();
 coffee.init(process.env.RPI)
 
 const socket = require('./userInterfaceServer');
-const io = socket.getSocket();
 
 require('byteballcore/wallet.js'); // we don't need any of its functions but it listens for hub/* messages
 
@@ -297,19 +296,30 @@ eventBus.on('my_transactions_became_stable', function (arrUnits) {
 });
 
 function createNewAddress() {
-  if (wallet) {
-    return walletDefinedByKeys.issueNextAddress(wallet, 0, function (objAddress) {
-      return objAddress;
-    });
-  }
+  return new Promise((resolve, reject) => {
+    if (wallet) {
+          walletDefinedByKeys.issueNextAddress(wallet, 0, function (objAddress) {
+              resolve(objAddress)
+          });
+    } else {
+      reject('no wallet')
+    }
+  })
+
 }
 
-io.on('newOrder', (type) => {
-  const newAddress = createNewAddress();
-  const orderType = type.type;
-  objDirectOrders[newAddress] = arrCoffees[orderType];
-  console.log('Received new order', orderType);
-  console.log('Generated new address for order', newAddress);
-  io.emit('generatedNewAddress', {address: newAddress, type: orderType});
-})
+socket.getSocket().on('connection', function (ioSocket) {
 
+    ioSocket.on('newOrder', (type) => {
+
+        createNewAddress()
+            .then(address => {
+                const orderType = type.type;
+                objDirectOrders[address.address] = arrCoffees[orderType];
+                console.log('Received new order', orderType);
+                console.log('Generated new address for order', address.address);
+                ioSocket.emit('generatedNewAddress', {address: address.address, type: orderType});
+                //console.log(objDirectOrders)
+            })
+    })
+});
