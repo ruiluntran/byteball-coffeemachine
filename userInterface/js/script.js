@@ -63,7 +63,7 @@ function generateNewQRcode(address, type) {
       break;
   }
 
-  $('#qrcode').html("");
+  $('#qrcode').html("<img src=\"img/loading.svg\" class=\"loading-icon\">");
   new QRCode('qrcode', {
     text: 'byteball:' + address + '?amount=' + price *100000 + '&asset=' + encodeURIComponent(assetId) ,
     width: qrCodeWidth,
