@@ -264,6 +264,7 @@ eventBus.on('new_my_transactions', function (arrUnits) {
 
                         if (objDirectOrders[receiving_address] != null) {
                             console.log('found new direct order')
+                            console.log(objDirectOrders[receiving_address])
                             const paid = amount / 100000;
                             // TODO check correct amount
                             const type = objDirectOrders[receiving_address]
@@ -346,15 +347,14 @@ function createNewAddress() {
 socket.getSocket().on('connection', function (ioSocket) {
 
     ioSocket.on('newOrder', (type) => {
-
         createNewAddress()
             .then(address => {
                 const orderType = type.type;
-                objDirectOrders[address.address] = arrCoffees[orderType];
+                objDirectOrders[address.address] = arrCoffees[orderType].name;
                 console.log('Received new order', orderType);
                 console.log('Generated new address for order', address.address);
                 ioSocket.emit('generatedNewAddress', {address: address.address, type: orderType});
-                //console.log(objDirectOrders)
+                console.log(objDirectOrders)
             })
     })
 });
