@@ -4,20 +4,21 @@ var qrCodeWidth;
 var prices;
 var assetId;
 
+var activeButtonClass = 'active';
+var button = $('button');
+
 $(document).ready(function () {
   qrCodeWidth = ($(window).width() / 2) - 40;
 
   $.get('/settings', function (data) {
     prices = data.prices;
     assetId = data.assetId;
-    $('#coffee-normal').addClass(activeButtonClass);
-    setPrice(prices.normal);
+    selectCoffeeType('normal', true);
   })
 
 });
 
-var activeButtonClass = 'active';
-var button = $('button');
+
 
 socket.on('generatedNewAddress', function (msg) {
   selectCoffeeType(msg.type, false);
@@ -30,6 +31,7 @@ socket.on('coffeePaid', function () {
 
   setTimeout(function () {
     setLoadingModal(false);
+    selectCoffeeType('normal', true);
   }, 70 * 1000);
 
 });
