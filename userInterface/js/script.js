@@ -46,7 +46,8 @@ function generateNewQRcode(content) {
 }
 
 function selectCoffeeType(type, emit) {
-  var buttonId = '#' + this.id;
+
+  var buttonId = '#' + type;
 
   switch (type){
     case 'normal':
@@ -57,7 +58,7 @@ function selectCoffeeType(type, emit) {
       break;
   }
   if(emit){
-    socket.emit('newOrder', {type: 'normal'});
+    socket.emit('newOrder', {type: type});
   }
 
   button.removeClass(activeButtonClass);
