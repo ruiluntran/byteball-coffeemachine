@@ -17,29 +17,19 @@ $(document).ready(function () {
 var activeButtonClass = 'active';
 var button = $('button');
 
-
-socket.on('generatedNewAddress', function(msg){
-  generateNewQRcode(msg.data);
+socket.on('generatedNewAddress', function (msg) {
+  selectCoffeeType(msg.type, false);
+  generateNewQRcode(msg.address);
 });
 
 socket.on('coffeePaid', function(){
   alert('Coffee paid');
+
+  // show loading 70000ms
 });
 
 button.on('click', function () {
-  var buttonId = '#' + this.id;
-
-  switch (this.id){
-    case 'coffee-normal':
-      setPrice(prices.normal);
-      break;
-    case 'coffee-strong':
-      setPrice(prices.strong);
-      break;
-  }
-
-  button.removeClass(activeButtonClass);
-  $(buttonId).addClass(activeButtonClass);
+  selectCoffeeType(this.id, true);
 });
 
 
@@ -53,6 +43,25 @@ function generateNewQRcode(content) {
     colorLight: "#ffffff",
     correctLevel: QRCode.CorrectLevel.H
   });
+}
+
+function selectCoffeeType(type, emit) {
+  var buttonId = '#' + this.id;
+
+  switch (type){
+    case 'normal':
+      setPrice(prices.normal);
+      break;
+    case 'strong':
+      setPrice(prices.strong);
+      break;
+  }
+  if(emit){
+    socket.emit('newOrder', {type: 'normal'});
+  }
+
+  button.removeClass(activeButtonClass);
+  $(buttonId).addClass(activeButtonClass);
 }
 
 function setPrice(price) {
