@@ -9,24 +9,38 @@ app.use(express.static('userInterface'));
 
 const io = require('socket.io')(http);
 
+let socket;
+io.on('connection', function (ioSocket) {
+    socket = ioSocket;
+});
+
 let wallet;
 
 app.get('/',(req, res) => {
   res.sendFile('./userInterface/index.html');
 });
 
-app.get('/prices', (req, res) => {
+app.get('/settings', (req, res) => {
   res.json({
-    normal: config.NormalCoffeePrice,
-    strong: config.StrongCoffeePrice
+    prices: {
+      normal: config.NormalCoffeePrice,
+      strong: config.StrongCoffeePrice,
+    },
+    assetId: config.boschCoinAssetId
   })
 });
 
-app.post('/newAddress',(req, res) => {
+/*
+app.post('/:type',(req, res) => {
+  if (!req.params.type) {
+    res.send({error: 'No valid coffee choice'})
+  }
+
   walletDefinedByKeys.issueNextAddress(wallet,0,(objAddress) => {
     res.send(objAddress.address);
   });
-});
+
+});*/
 
 
 http.listen(port, function () {
@@ -44,7 +58,8 @@ module.exports = {
   },
   setWallet: (_wallet) => {
     wallet = _wallet
+  },
+  getSocket: () => {
+    return io;
   }
-
-
 };

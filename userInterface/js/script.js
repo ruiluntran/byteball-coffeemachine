@@ -2,57 +2,98 @@ var socket = io();
 var qrCodeWidth;
 
 var prices;
-
-$(document).ready(function () {
-  qrCodeWidth = ($(window).width() / 2) - 40;
-
-  $.get('/prices', function (data) {
-    prices = data;
-    $('#coffee-normal').addClass(activeButtonClass);
-    setPrice(prices.normal);
-  })
-
-});
+var assetId;
 
 var activeButtonClass = 'active';
 var button = $('button');
 
+$(document).ready(function () {
+  qrCodeWidth = ($(window).width() / 2) - 40;
 
-socket.on('generatedNewAddress', function(msg){
-  generateNewQRcode(msg.data);
+  $.get('/settings', function (data) {
+    prices = data.prices;
+    assetId = data.assetId;
+    selectCoffeeType('normal', true);
+  })
+
 });
 
-socket.on('coffeePaid', function(){
-  alert('Coffee paid');
+
+
+socket.on('generatedNewAddress', function (msg) {
+  selectCoffeeType(msg.type, false);
+  generateNewQRcode(msg.address, msg.type);
+});
+
+socket.on('coffeePaid', function () {
+
+  setLoadingModal(true);
+
+  setTimeout(function () {
+    setLoadingModal(false);
+    selectCoffeeType('normal', true);
+  }, 70 * 1000);
+
 });
 
 button.on('click', function () {
-  var buttonId = '#' + this.id;
+  selectCoffeeType(this.id, true);
+});
 
-  switch (this.id){
-    case 'coffee-normal':
-      setPrice(prices.normal);
+function setLoadingModal(show) {
+  var backtdrop = $('#backdrop');
+  var loadingModal = $('#loadingModal');
+
+  if (show) {
+    backtdrop.removeClass('hidden');
+    loadingModal.removeClass('hidden');
+  } else {
+    backtdrop.addClass('hidden');
+    loadingModal.addClass('hidden');
+  }
+
+}
+
+function generateNewQRcode(address, type) {
+  var price;
+  switch (type) {
+    case 'normal':
+      price = prices.normal;
       break;
-    case 'coffee-strong':
-      setPrice(prices.strong);
+    case 'strong':
+      price = prices.strong;
       break;
   }
 
-  button.removeClass(activeButtonClass);
-  $(buttonId).addClass(activeButtonClass);
-});
-
-
-function generateNewQRcode(content) {
   $('#qrcode').html("");
   new QRCode('qrcode', {
-    text: 'byteball:'+content,
+    text: 'byteball:' + address + '?amount=' + price *100000 + '&asset=' + encodeURIComponent(assetId) ,
     width: qrCodeWidth,
     height: qrCodeWidth,
     colorDark: "#EC1B24",
     colorLight: "#ffffff",
     correctLevel: QRCode.CorrectLevel.H
   });
+}
+
+function selectCoffeeType(type, emit) {
+
+  var buttonId = '#' + type;
+
+  switch (type) {
+    case 'normal':
+      setPrice(prices.normal);
+      break;
+    case 'strong':
+      setPrice(prices.strong);
+      break;
+  }
+  if (emit) {
+    socket.emit('newOrder', {type: type});
+  }
+
+  button.removeClass(activeButtonClass);
+  $(buttonId).addClass(activeButtonClass);
 }
 
 function setPrice(price) {

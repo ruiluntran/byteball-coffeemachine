@@ -41,6 +41,11 @@ table {
 
 }
 
+.codeGen {
+  margin-top: 30px;
+  padding-top: 30px;
+}
+
 .price {
   margin-top: 30px;
   text-align: center;
@@ -74,4 +79,40 @@ table {
     }
 
   }
+}
+
+#loadingModal {
+  position: absolute;
+  width: 80vw;
+  height: 80vh;
+  top:0;
+  left:0;
+  background-color: #ffffff;
+  margin:5%;
+  z-index: 999;
+  border-radius: 20px;
+
+  .loading-icon {
+    width: 160px;
+  }
+
+  .loading-text {
+    margin-top: 30px;
+    font-size: 26px;
+    color: @bosch-red;
+  }
+}
+
+#backdrop {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 998;
+}
+
+.hidden {
+  display: none;
 }

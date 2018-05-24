@@ -9,7 +9,6 @@ const fs = require('fs');
 const db = require('byteballcore/db.js');
 const eventBus = require('byteballcore/event_bus.js');
 const desktopApp = require('byteballcore/desktop_app.js');
-
 const coffeeController = require('./coffee');
 
 let coffee = new coffeeController();
@@ -28,6 +27,8 @@ const arrCoffees = {
   normal: {name: 'Normal', price: conf.NormalCoffeePrice},
   strong: {name: 'Strong', price: conf.StrongCoffeePrice},
 };
+
+let objDirectOrders = {};
 
 function getCoffeeList() {
   var arrItems = [];
@@ -188,6 +189,7 @@ eventBus.on('paired', function (from_address) {
 });
 
 eventBus.on('text', function (from_address, text) {
+
   if (!wallet)
     return handleNoWallet(from_address);
   text = text.trim().toLowerCase();
@@ -199,7 +201,6 @@ eventBus.on('text', function (from_address, text) {
         if (!arrCoffees[text])
           return device.sendMessageToDevice(from_address, 'text', "Please choose your coffee:\n" + getCoffeeList());
         walletDefinedByKeys.issueNextAddress(wallet, 0, function (objAddress) {
-          socket.generatedNewAddress(objAddress.address);
           state.address = objAddress.address;
           state.order.coffee = text;
           state.step = 'waiting_for_payment';
@@ -242,28 +243,65 @@ eventBus.on('text', function (from_address, text) {
 
 eventBus.on('new_my_transactions', function (arrUnits) {
   try {
+    console.log('################### new transaction')
+    console.log(arrUnits);
+
     db.query(
       "SELECT state_id, outputs.unit, device_address, states.amount AS expected_amount, `order`, outputs.amount AS paid_amount, outputs.asset \n\
       FROM outputs JOIN states USING(address) WHERE outputs.unit IN(?) AND pay_date IS NULL",
       [arrUnits],
       function (rows) {
-        rows.forEach(function (row) {
-          const paid = row.paid_amount / 100000;
-          const order = JSON.parse(row.order).coffee;
+        if (rows.length === 0) {
+            db.query(
+                "SELECT * FROM outputs WHERE outputs.unit IN(?) AND outputs.message_index = 1",
+                [arrUnits],
+                function (rows) {
+                    rows.forEach(function (row) {
+                        console.log(row);
+                        const receiving_address = row.address;
+                        const amount = row.amount;
+                        const asset = row.asset;
 
-          if (row.asset !== conf.boschCoinAssetId)
-            return device.sendMessageToDevice(row.device_address, 'text', "Received payment in wrong asset");
-          if (row.expected_amount !== paid) {
-            return device.sendMessageToDevice(row.device_address, 'text', "Received incorrect amount from you: expected " + row.expected_amount + " Bosch Coins, received " + paid + " bytes.  The payment is ignored.");
-          }
+                        if (objDirectOrders[receiving_address] != null) {
+                            console.log('found new direct order')
+                            console.log(objDirectOrders[receiving_address])
+                            const paid = amount / 100000;
+                            // TODO check correct amount
+                            const type = objDirectOrders[receiving_address]
+                            coffee.startCoffee( type );
+                            socket.coffeePaid();
 
-          db.query("UPDATE states SET pay_date=" + db.getNow() + ", unit=?, step='unconfirmed_payment' WHERE state_id=?", [row.unit, row.state_id]);
-          device.sendMessageToDevice(row.device_address, 'text', `We're pouring your coffee now while we are waiting for confirmation of your payment.`);
-          console.log(row)
+                        } else {
+                            console.log('no direct order found')
+                        }
+
+
+
+                    });
+                }
+            );
+        } else {
+
+          rows.forEach(function (row) {
+            console.log(row);
+
+            const paid = row.paid_amount / 100000;
+            const order = JSON.parse(row.order).coffee;
+
+            if (row.asset !== conf.boschCoinAssetId)
+              return device.sendMessageToDevice(row.device_address, 'text', "Received payment in wrong asset");
+            if (row.expected_amount !== paid) {
+              return device.sendMessageToDevice(row.device_address, 'text', "Received incorrect amount from you: expected " + row.expected_amount + " Bosch Coins, received " + paid + " bytes.  The payment is ignored.");
+            }
+
+            db.query("UPDATE states SET pay_date=" + db.getNow() + ", unit=?, step='unconfirmed_payment' WHERE state_id=?", [row.unit, row.state_id]);
+            device.sendMessageToDevice(row.device_address, 'text', `We're pouring your coffee now while we are waiting for confirmation of your payment.`);
+
             coffee.startCoffee( order );
-            //socket.coffeePaid();
+            socket.coffeePaid();
 
-        });
+          });
+        }
       }
     );
   } catch(e) {
@@ -294,11 +332,29 @@ eventBus.on('my_transactions_became_stable', function (arrUnits) {
 });
 
 function createNewAddress() {
-  if (wallet) {
-    return walletDefinedByKeys.issueNextAddress(wallet, 0, function (objAddress) {
-      return objAddress;
-    });
-  }
+  return new Promise((resolve, reject) => {
+    if (wallet) {
+          walletDefinedByKeys.issueNextAddress(wallet, 0, function (objAddress) {
+              resolve(objAddress)
+          });
+    } else {
+      reject('no wallet')
+    }
+  })
+
 }
 
+socket.getSocket().on('connection', function (ioSocket) {
 
+    ioSocket.on('newOrder', (type) => {
+        createNewAddress()
+            .then(address => {
+                const orderType = type.type.toLowerCase();
+                objDirectOrders[address.address] = orderType;
+                console.log('Received new order', orderType);
+                console.log('Generated new address for order', address.address);
+                ioSocket.emit('generatedNewAddress', {address: address.address, type: orderType});
+                console.log(objDirectOrders)
+            })
+    })
+});
