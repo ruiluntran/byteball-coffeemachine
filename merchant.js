@@ -189,9 +189,6 @@ eventBus.on('paired', function (from_address) {
 });
 
 eventBus.on('text', function (from_address, text) {
-  console.log('###########')
-    console.log('new text', text)
-    console.log('###############')
 
   if (!wallet)
     return handleNoWallet(from_address);
@@ -254,23 +251,56 @@ eventBus.on('new_my_transactions', function (arrUnits) {
       FROM outputs JOIN states USING(address) WHERE outputs.unit IN(?) AND pay_date IS NULL",
       [arrUnits],
       function (rows) {
-        rows.forEach(function (row) {
-          const paid = row.paid_amount / 100000;
-          const order = JSON.parse(row.order).coffee;
+        if (rows.length === 0) {
+            db.query(
+                "SELECT * FROM outputs WHERE outputs.unit IN(?) AND outputs.output_index = 0 AND outputs.message_index = 1",
+                [arrUnits],
+                function (rows) {
+                    rows.forEach(function (row) {
+                        console.log(row);
+                        const receiving_address = row.address;
+                        const amount = row.amount;
+                        const asset = row.asset;
 
-          if (row.asset !== conf.boschCoinAssetId)
-            return device.sendMessageToDevice(row.device_address, 'text', "Received payment in wrong asset");
-          if (row.expected_amount !== paid) {
-            return device.sendMessageToDevice(row.device_address, 'text', "Received incorrect amount from you: expected " + row.expected_amount + " Bosch Coins, received " + paid + " bytes.  The payment is ignored.");
-          }
+                        if (objDirectOrders[receiving_address] != null) {
+                            console.log('found new direct order')
+                            const paid = amount / 100000;
+                            // TODO check correct amount
+                            const type = objDirectOrders[receiving_address]
+                            coffee.startCoffee( type );
+                            socket.coffeePaid();
 
-          db.query("UPDATE states SET pay_date=" + db.getNow() + ", unit=?, step='unconfirmed_payment' WHERE state_id=?", [row.unit, row.state_id]);
-          device.sendMessageToDevice(row.device_address, 'text', `We're pouring your coffee now while we are waiting for confirmation of your payment.`);
+                        } else {
+                            console.log('no direct order found')
+                        }
 
-          coffee.startCoffee( order );
-          socket.coffeePaid();
 
-        });
+
+                    });
+                }
+            );
+        } else {
+
+          rows.forEach(function (row) {
+            console.log(row);
+
+            const paid = row.paid_amount / 100000;
+            const order = JSON.parse(row.order).coffee;
+
+            if (row.asset !== conf.boschCoinAssetId)
+              return device.sendMessageToDevice(row.device_address, 'text', "Received payment in wrong asset");
+            if (row.expected_amount !== paid) {
+              return device.sendMessageToDevice(row.device_address, 'text', "Received incorrect amount from you: expected " + row.expected_amount + " Bosch Coins, received " + paid + " bytes.  The payment is ignored.");
+            }
+
+            db.query("UPDATE states SET pay_date=" + db.getNow() + ", unit=?, step='unconfirmed_payment' WHERE state_id=?", [row.unit, row.state_id]);
+            device.sendMessageToDevice(row.device_address, 'text', `We're pouring your coffee now while we are waiting for confirmation of your payment.`);
+
+            coffee.startCoffee( order );
+            socket.coffeePaid();
+
+          });
+        }
       }
     );
   } catch(e) {
