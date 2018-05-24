@@ -189,6 +189,10 @@ eventBus.on('paired', function (from_address) {
 });
 
 eventBus.on('text', function (from_address, text) {
+  console.log('###########')
+    console.log('new text', text)
+    console.log('###############')
+
   if (!wallet)
     return handleNoWallet(from_address);
   text = text.trim().toLowerCase();
@@ -242,6 +246,7 @@ eventBus.on('text', function (from_address, text) {
 
 eventBus.on('new_my_transactions', function (arrUnits) {
   try {
+    console.log('################### new transaction')
     console.log(arrUnits);
 
     db.query(
