@@ -2,12 +2,14 @@ var socket = io();
 var qrCodeWidth;
 
 var prices;
+var assetId;
 
 $(document).ready(function () {
   qrCodeWidth = ($(window).width() / 2) - 40;
 
-  $.get('/prices', function (data) {
-    prices = data;
+  $.get('/settings', function (data) {
+    prices = data.prices;
+    assetId = data.assetId;
     $('#coffee-normal').addClass(activeButtonClass);
     setPrice(prices.normal);
   })
@@ -19,24 +21,51 @@ var button = $('button');
 
 socket.on('generatedNewAddress', function (msg) {
   selectCoffeeType(msg.type, false);
-  generateNewQRcode(msg.address);
+  generateNewQRcode(msg.address, msg.type);
 });
 
-socket.on('coffeePaid', function(){
-  alert('Coffee paid');
+socket.on('coffeePaid', function () {
 
-  // show loading 70000ms
+  setLoadingModal(true);
+
+  setTimeout(function () {
+    setLoadingModal(false);
+  }, 70 * 1000);
+
 });
 
 button.on('click', function () {
   selectCoffeeType(this.id, true);
 });
 
+function setLoadingModal(show) {
+  var backtdrop = $('#backdrop');
+  var loadingModal = $('#loadingModal');
 
-function generateNewQRcode(content) {
+  if (show) {
+    backtdrop.removeClass('hidden');
+    loadingModal.removeClass('hidden');
+  } else {
+    backtdrop.addClass('hidden');
+    loadingModal.addClass('hidden');
+  }
+
+}
+
+function generateNewQRcode(address, type) {
+  var price;
+  switch (type) {
+    case 'normal':
+      price = prices.normal;
+      break;
+    case 'strong':
+      price = prices.strong;
+      break;
+  }
+
   $('#qrcode').html("");
   new QRCode('qrcode', {
-    text: 'byteball:'+content,
+    text: 'byteball:' + address + '?amount=' + price *100000 + '&asset=' + assetId ,
     width: qrCodeWidth,
     height: qrCodeWidth,
     colorDark: "#EC1B24",
@@ -49,7 +78,7 @@ function selectCoffeeType(type, emit) {
 
   var buttonId = '#' + type;
 
-  switch (type){
+  switch (type) {
     case 'normal':
       setPrice(prices.normal);
       break;
@@ -57,7 +86,7 @@ function selectCoffeeType(type, emit) {
       setPrice(prices.strong);
       break;
   }
-  if(emit){
+  if (emit) {
     socket.emit('newOrder', {type: type});
   }
 

@@ -20,10 +20,13 @@ app.get('/',(req, res) => {
   res.sendFile('./userInterface/index.html');
 });
 
-app.get('/prices', (req, res) => {
+app.get('/settings', (req, res) => {
   res.json({
-    normal: config.NormalCoffeePrice,
-    strong: config.StrongCoffeePrice
+    prices: {
+      normal: config.NormalCoffeePrice,
+      strong: config.StrongCoffeePrice,
+    },
+    assetId: config.boschCoinAssetId
   })
 });
 
