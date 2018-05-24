@@ -10,7 +10,7 @@ $(document).ready(function () {
   $.get('/settings', function (data) {
     prices = data.prices;
     assetId = data.assetId;
-    $('#coffee-normal').addClass(activeButtonClass);
+    $('#normal').addClass(activeButtonClass);
     setPrice(prices.normal);
   })
 
