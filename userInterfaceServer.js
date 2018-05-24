@@ -22,6 +22,7 @@ app.get('/prices', (req, res) => {
   })
 });
 
+/*
 app.post('/:type',(req, res) => {
   if (!req.params.type) {
     res.send({error: 'No valid coffee choice'})
@@ -30,7 +31,8 @@ app.post('/:type',(req, res) => {
   walletDefinedByKeys.issueNextAddress(wallet,0,(objAddress) => {
     res.send(objAddress.address);
   });
-});
+
+});*/
 
 
 http.listen(port, function () {
@@ -48,7 +50,8 @@ module.exports = {
   },
   setWallet: (_wallet) => {
     wallet = _wallet
+  },
+  getSocket: () => {
+    return io;
   }
-
-
 };

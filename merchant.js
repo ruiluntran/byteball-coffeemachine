@@ -9,13 +9,13 @@ const fs = require('fs');
 const db = require('byteballcore/db.js');
 const eventBus = require('byteballcore/event_bus.js');
 const desktopApp = require('byteballcore/desktop_app.js');
-
 const coffeeController = require('./coffee');
 
 let coffee = new coffeeController();
 coffee.init(process.env.RPI)
 
 const socket = require('./userInterfaceServer');
+const io = socket.getSocket();
 
 require('byteballcore/wallet.js'); // we don't need any of its functions but it listens for hub/* messages
 
@@ -28,6 +28,8 @@ const arrCoffees = {
   normal: {name: 'Normal', price: conf.NormalCoffeePrice},
   strong: {name: 'Strong', price: conf.StrongCoffeePrice},
 };
+
+let objDirectOrders = {};
 
 function getCoffeeList() {
   var arrItems = [];
@@ -242,6 +244,8 @@ eventBus.on('text', function (from_address, text) {
 
 eventBus.on('new_my_transactions', function (arrUnits) {
   try {
+    console.log(arrUnits);
+
     db.query(
       "SELECT state_id, outputs.unit, device_address, states.amount AS expected_amount, `order`, outputs.amount AS paid_amount, outputs.asset \n\
       FROM outputs JOIN states USING(address) WHERE outputs.unit IN(?) AND pay_date IS NULL",
@@ -259,9 +263,9 @@ eventBus.on('new_my_transactions', function (arrUnits) {
 
           db.query("UPDATE states SET pay_date=" + db.getNow() + ", unit=?, step='unconfirmed_payment' WHERE state_id=?", [row.unit, row.state_id]);
           device.sendMessageToDevice(row.device_address, 'text', `We're pouring your coffee now while we are waiting for confirmation of your payment.`);
-          console.log(row)
-            coffee.startCoffee( order );
-            //socket.coffeePaid();
+
+          coffee.startCoffee( order );
+          socket.coffeePaid();
 
         });
       }
@@ -300,5 +304,14 @@ function createNewAddress() {
     });
   }
 }
+
+io.on('neworder', (type) => {
+  const newAddress = createNewAddress();
+  const orderType = type.type;
+  objDirectOrders[newAddress] = arrCoffees[orderType];
+  console.log('Received new order', orderType);
+  console.log('Generated new address for order', newAddress);
+  io.emit('generatedNewAddress', {address: newAddress, type: orderType});
+})
 
 
