@@ -349,7 +349,7 @@ socket.getSocket().on('connection', function (ioSocket) {
     ioSocket.on('newOrder', (type) => {
         createNewAddress()
             .then(address => {
-                const orderType = type.type;
+                const orderType = type.type.toLowerCase();
                 objDirectOrders[address.address] = orderType;
                 console.log('Received new order', orderType);
                 console.log('Generated new address for order', address.address);
