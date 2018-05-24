@@ -22,7 +22,7 @@ exports.homeDeviceAddress = '073BIUYNKEKYXSJCUAKKXZPXMMVAOX3YN';
 
 /* Coffee prices in Bosch Coins (BC) */
 exports.NormalCoffeePrice = 0.5;
-exports.StrongCoffeePrice = 1;
+exports.StrongCoffeePrice = 0.7;
 
 // Bosch Coin Asset id
 exports.boschCoinAssetId = 'ok0KVjTO9h5eU6klYLb0nwYFqJhcHlXBYoSgq1RF8E0=';

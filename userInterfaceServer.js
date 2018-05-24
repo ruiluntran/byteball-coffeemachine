@@ -22,7 +22,11 @@ app.get('/prices', (req, res) => {
   })
 });
 
-app.post('/newAddress',(req, res) => {
+app.post('/:type',(req, res) => {
+  if (!req.params.type) {
+    res.send({error: 'No valid coffee choice'})
+  }
+
   walletDefinedByKeys.issueNextAddress(wallet,0,(objAddress) => {
     res.send(objAddress.address);
   });
