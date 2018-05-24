@@ -253,7 +253,7 @@ eventBus.on('new_my_transactions', function (arrUnits) {
       function (rows) {
         if (rows.length === 0) {
             db.query(
-                "SELECT * FROM outputs WHERE outputs.unit IN(?) AND outputs.output_index = 0 AND outputs.message_index = 1",
+                "SELECT * FROM outputs WHERE outputs.unit IN(?) AND outputs.message_index = 1",
                 [arrUnits],
                 function (rows) {
                     rows.forEach(function (row) {
