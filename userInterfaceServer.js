@@ -9,6 +9,11 @@ app.use(express.static('userInterface'));
 
 const io = require('socket.io')(http);
 
+let socket;
+io.on('connection', function (ioSocket) {
+    socket = ioSocket;
+});
+
 let wallet;
 
 app.get('/',(req, res) => {
@@ -52,6 +57,6 @@ module.exports = {
     wallet = _wallet
   },
   getSocket: () => {
-    return io;
+    return socket;
   }
 };

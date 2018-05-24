@@ -304,7 +304,7 @@ function createNewAddress() {
   }
 }
 
-io.on('neworder', (type) => {
+io.on('newOrder', (type) => {
   const newAddress = createNewAddress();
   const orderType = type.type;
   objDirectOrders[newAddress] = arrCoffees[orderType];
@@ -312,5 +312,4 @@ io.on('neworder', (type) => {
   console.log('Generated new address for order', newAddress);
   io.emit('generatedNewAddress', {address: newAddress, type: orderType});
 })
-
 
