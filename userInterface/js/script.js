@@ -58,7 +58,7 @@ function selectCoffeeType(type, emit) {
       break;
   }
   if(emit){
-    socket.emit('newOrder', {type: 'normal'});
+    socket.emit('newOrder', {type: type});
   }
 
   button.removeClass(activeButtonClass);
