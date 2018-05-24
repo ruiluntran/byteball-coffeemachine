@@ -46,7 +46,8 @@ function generateNewQRcode(content) {
 }
 
 function selectCoffeeType(type, emit) {
-  var buttonId = '#' + this.id;
+
+  var buttonId = '#' + type;
 
   switch (type){
     case 'normal':
